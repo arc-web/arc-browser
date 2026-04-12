@@ -1,0 +1,12 @@
+{
+  "skool.com": {
+    "risk": "low",
+    "mode": "headed",
+    "actions_per_hour": 40
+  },
+  "linkedin.com": { "risk": "high", "mode": "cdp", "actions_per_hour": 15 },
+  "twitter.com":  { "risk": "high", "mode": "cdp", "actions_per_hour": 20 },
+  "x.com":        { "risk": "high", "mode": "cdp", "actions_per_hour": 20 },
+  "facebook.com": { "risk": "high", "mode": "cdp", "actions_per_hour": 10 },
+  "github.com":   { "risk": "low",  "mode": "headless", "actions_per_hour": 60 }
+}
