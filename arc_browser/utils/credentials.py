@@ -27,7 +27,3 @@ def get_credentials(item_name: str) -> dict:
         return result
     except Exception as e:
         raise RuntimeError(f"1Password lookup failed for '{item_name}': {e}")
-
-
-def get_skool_credentials() -> dict:
-    return get_credentials("Skool")

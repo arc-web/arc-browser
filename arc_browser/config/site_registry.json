@@ -1,12 +1,48 @@
 {
-  "skool.com": {
-    "risk": "low",
-    "mode": "headed",
-    "actions_per_hour": 40
+  "linkedin.com": {
+    "risk": "high",
+    "mode": "cdp",
+    "actions_per_hour": 15,
+    "waits": { "default": "load", "post_nav_ms": 2000 },
+    "notes": "CDP mode required - aggressive bot detection"
   },
-  "linkedin.com": { "risk": "high", "mode": "cdp", "actions_per_hour": 15 },
-  "twitter.com":  { "risk": "high", "mode": "cdp", "actions_per_hour": 20 },
-  "x.com":        { "risk": "high", "mode": "cdp", "actions_per_hour": 20 },
-  "facebook.com": { "risk": "high", "mode": "cdp", "actions_per_hour": 10 },
-  "github.com":   { "risk": "low",  "mode": "headless", "actions_per_hour": 60 }
+  "twitter.com": {
+    "risk": "high",
+    "mode": "cdp",
+    "actions_per_hour": 20,
+    "waits": { "default": "load", "post_nav_ms": 1500 },
+    "notes": "CDP mode required - aggressive bot detection"
+  },
+  "x.com": {
+    "risk": "high",
+    "mode": "cdp",
+    "actions_per_hour": 20,
+    "waits": { "default": "load", "post_nav_ms": 1500 },
+    "notes": "Same as twitter.com - alternate domain"
+  },
+  "facebook.com": {
+    "risk": "high",
+    "mode": "cdp",
+    "actions_per_hour": 10,
+    "waits": { "default": "load", "post_nav_ms": 2000 },
+    "notes": "CDP mode required - aggressive bot detection"
+  },
+  "github.com": {
+    "risk": "low",
+    "mode": "headless",
+    "actions_per_hour": 60,
+    "waits": { "default": "load", "post_nav_ms": 500 },
+    "auth": {
+      "login_url": "https://github.com/login",
+      "credential_item": "GitHub",
+      "form": {
+        "email_selector": "#login_field",
+        "password_selector": "#password",
+        "submit": "enter"
+      },
+      "verify_url": "https://github.com/",
+      "verify_not_contains": "github.com/login"
+    },
+    "notes": "Auth recipe provided as reference. 2FA-enabled accounts require manual login."
+  }
 }

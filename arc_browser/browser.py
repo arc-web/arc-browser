@@ -7,6 +7,8 @@ Browser context factory. Supports 4 modes:
 """
 import asyncio
 import os
+import signal
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -19,18 +21,33 @@ _sessions: dict = {}
 _pw = None
 
 
-def _clear_stale_lock(profile_dir: str) -> None:
-    lock_path = os.path.join(profile_dir, "SingletonLock")
-    if not os.path.islink(lock_path) and not os.path.exists(lock_path):
-        return
+def _kill_chrome_for_profile(profile_dir: str) -> None:
+    """Kill any Chrome process using this user-data-dir, then clean up locks."""
+    # Find Chrome processes with this profile's user-data-dir
     try:
-        target = os.readlink(lock_path)
-        pid_str = target.rsplit("-", 1)[-1]
-        pid = int(pid_str)
-        os.kill(pid, 0)
-    except (OSError, ValueError, IndexError):
+        result = subprocess.run(
+            ["pgrep", "-f", f"--user-data-dir={profile_dir}"],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.stdout.strip():
+            for pid_str in result.stdout.strip().split("\n"):
+                try:
+                    pid = int(pid_str.strip())
+                    os.kill(pid, signal.SIGTERM)
+                except (ValueError, OSError):
+                    pass
+            # Give Chrome a moment to exit cleanly
+            import time
+            time.sleep(0.5)
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+
+    # Clean up lock files
+    for lock_name in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
+        lock_path = os.path.join(profile_dir, lock_name)
         try:
-            os.remove(lock_path)
+            if os.path.islink(lock_path) or os.path.exists(lock_path):
+                os.remove(lock_path)
         except OSError:
             pass
 
@@ -58,7 +75,7 @@ async def get_context(session: str = "default", mode: str = "headed", extensions
     pw = await _get_pw()
     profile = os.path.join(SESSIONS_DIR, session)
     os.makedirs(profile, exist_ok=True)
-    _clear_stale_lock(profile)
+    _kill_chrome_for_profile(profile)
 
     if mode == "headless":
         ctx = await pw.chromium.launch_persistent_context(
@@ -73,6 +90,10 @@ async def get_context(session: str = "default", mode: str = "headed", extensions
             f"--window-position={SECOND_MONITOR_X},0",
             "--window-size=1920,1080",
             "--lang=en-US",
+            "--no-first-run",
+            "--disable-session-crashed-bubble",
+            "--hide-crash-restore-bubble",
+            "--suppress-message-center-popups",
         ]
         if extensions:
             ext_paths = [
@@ -127,3 +148,139 @@ async def close_session(session: str = "default"):
             await ctx.close()
         except Exception:
             pass
+
+
+# -- Reusable primitives ------------------------------------------------------
+
+
+async def with_retry(coro_factory, attempts: int = 3, backoff: float = 1.5):
+    """Retry an awaitable with exponential backoff.
+
+    coro_factory: callable returning a fresh coroutine each attempt (needed
+    because coroutines can only be awaited once).
+    """
+    last_exc = None
+    delay = 0.5
+    for i in range(attempts):
+        try:
+            return await coro_factory()
+        except Exception as e:
+            last_exc = e
+            if i < attempts - 1:
+                await asyncio.sleep(delay)
+                delay *= backoff
+    raise last_exc
+
+
+async def navigate_ready(page, url: str, wait_for_selector: str = None,
+                         wait_until: str = "load", timeout: int = 60000,
+                         post_nav_ms: int = 1000):
+    """Navigate and wait for the page to be actually usable.
+
+    - Uses wait_until="load" by default (SPAs never hit networkidle)
+    - Optionally waits for a specific selector after load
+    - Adds post_nav settle time for SPA hydration
+    """
+    await page.goto(url, wait_until=wait_until, timeout=timeout)
+    if wait_for_selector:
+        await page.wait_for_selector(wait_for_selector, timeout=timeout)
+    if post_nav_ms:
+        await asyncio.sleep(post_nav_ms / 1000)
+
+
+async def auto_login(site_id: str, session: str = None, force: bool = False) -> dict:
+    """Auto-login for a site using the registry recipe + 1Password.
+
+    Returns {"status": "logged_in"|"already"|"failed", "reason": str}.
+    Idempotent: returns "already" if the verify_url check passes without
+    needing to re-authenticate (unless force=True).
+    """
+    from router import get_recipe
+    from utils.credentials import get_credentials
+
+    recipe = get_recipe(site_id)
+    auth = recipe.get("auth") if recipe else None
+    if not auth:
+        return {"status": "failed", "reason": f"No auth recipe for '{site_id}'"}
+
+    mode = recipe.get("mode", "headed")
+    sess = session or site_id.replace(".", "_")
+    ctx = await get_context(session=sess, mode=mode)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+
+    # Probe existing session first
+    if not force:
+        try:
+            await page.goto(auth["verify_url"], wait_until="load", timeout=30000)
+            await asyncio.sleep(1)
+            if auth.get("verify_not_contains", "") not in page.url:
+                return {"status": "already", "reason": "Existing session is valid"}
+        except Exception:
+            pass
+
+    # Fetch credentials
+    try:
+        creds = get_credentials(auth["credential_item"])
+    except Exception as e:
+        return {"status": "failed", "reason": f"Credential lookup failed: {e}"}
+    if not creds.get("username") or not creds.get("password"):
+        return {"status": "failed", "reason": "Credentials missing username/password"}
+
+    # Fill form
+    form = auth.get("form", {})
+    try:
+        await page.goto(auth["login_url"], wait_until="load", timeout=60000)
+        await asyncio.sleep(2)
+        email_sel = form.get("email_selector")
+        pw_sel = form.get("password_selector")
+        if not email_sel or not pw_sel:
+            return {"status": "failed", "reason": "Recipe form selectors incomplete"}
+        await page.wait_for_selector(email_sel, timeout=30000)
+        await page.fill(email_sel, creds["username"])
+        await asyncio.sleep(0.5)
+        await page.wait_for_selector(pw_sel, timeout=10000)
+        await page.fill(pw_sel, creds["password"])
+        await asyncio.sleep(0.5)
+        if form.get("submit") == "enter":
+            await page.keyboard.press("Enter")
+        elif form.get("submit_selector"):
+            await page.click(form["submit_selector"])
+        else:
+            await page.keyboard.press("Enter")
+    except Exception as e:
+        return {"status": "failed", "reason": f"Form submission failed: {e}"}
+
+    # Poll for redirect away from login
+    for _ in range(30):
+        await asyncio.sleep(2)
+        if auth.get("verify_not_contains", "") not in page.url:
+            return {"status": "logged_in", "reason": f"Redirected to {page.url}"}
+
+    return {"status": "failed", "reason": "Did not redirect away from login page"}
+
+
+async def verify_auth(site_id: str, session: str = None) -> dict:
+    """Check whether the session for `site_id` is authenticated.
+
+    Returns {"authenticated": bool, "reason": str}.
+    """
+    from router import get_recipe
+
+    recipe = get_recipe(site_id)
+    auth = recipe.get("auth") if recipe else None
+    if not auth:
+        return {"authenticated": False, "reason": f"No auth recipe for '{site_id}'"}
+
+    mode = recipe.get("mode", "headed")
+    sess = session or site_id.replace(".", "_")
+    ctx = await get_context(session=sess, mode=mode)
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+
+    try:
+        await page.goto(auth["verify_url"], wait_until="load", timeout=30000)
+        await asyncio.sleep(1)
+        if auth.get("verify_not_contains", "") in page.url:
+            return {"authenticated": False, "reason": f"Redirected to login ({page.url})"}
+        return {"authenticated": True, "reason": f"At {page.url}"}
+    except Exception as e:
+        return {"authenticated": False, "reason": f"Probe failed: {e}"}

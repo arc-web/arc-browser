@@ -14,6 +14,20 @@ _REGISTRY = json.loads(
 _CDP_REQUIRED = {"linkedin.com", "twitter.com", "x.com", "facebook.com"}
 
 
+def _domain_of(url_or_domain: str) -> str:
+    if "://" in url_or_domain:
+        try:
+            return urlparse(url_or_domain).netloc.lstrip("www.")
+        except Exception:
+            return url_or_domain
+    return url_or_domain.lstrip("www.")
+
+
+def get_recipe(url_or_domain: str) -> dict:
+    """Return the full registry entry (recipe) for a URL or bare domain. {} if unknown."""
+    return _REGISTRY.get(_domain_of(url_or_domain), {})
+
+
 def classify(url: str, needs_extensions: bool = False) -> dict:
     """
     Classify a URL and return execution parameters.
