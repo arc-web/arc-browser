@@ -20,7 +20,7 @@ load_dotenv()
 
 from mcp.server.fastmcp import FastMCP
 from browser import (
-    get_context, current_page, close_session,
+    get_context, current_page,
     navigate_ready, auto_login, verify_auth, with_retry,
 )
 from router import classify, get_recipe

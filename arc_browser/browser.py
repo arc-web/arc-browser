@@ -203,6 +203,11 @@ async def auto_login(site_id: str, session: str = None, force: bool = False) -> 
     if not auth:
         return {"status": "failed", "reason": f"No auth recipe for '{site_id}'"}
 
+    required = ["credential_item", "login_url", "verify_url"]
+    missing = [k for k in required if k not in auth]
+    if missing:
+        return {"status": "failed", "reason": f"Recipe missing auth fields: {missing}"}
+
     mode = recipe.get("mode", "headed")
     sess = session or site_id.replace(".", "_")
     ctx = await get_context(session=sess, mode=mode)
