@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StackPack Skool Audit Report</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface-2: #232736;
+    --border: #2e3347;
+    --text: #e4e6f0;
+    --text-dim: #8b8fa7;
+    --accent: #6c5ce7;
+    --accent-light: #a29bfe;
+    --green: #00b894;
+    --green-bg: rgba(0,184,148,0.12);
+    --yellow: #fdcb6e;
+    --yellow-bg: rgba(253,203,110,0.12);
+    --red: #ff6b6b;
+    --red-bg: rgba(255,107,107,0.12);
+    --orange: #e17055;
+    --blue: #74b9ff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 2rem;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 50%, rgba(108,92,231,0.08) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .header h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, var(--text) 0%, var(--accent-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header .subtitle { color: var(--text-dim); font-size: 1rem; }
+  .header .date { color: var(--text-dim); font-size: 0.85rem; margin-top: 0.5rem; }
+
+  /* Stats Grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+  }
+  .stat-card .value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--accent-light);
+    line-height: 1.2;
+  }
+  .stat-card .label {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+  }
+
+  /* Sections */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .section h2 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .section h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 1rem 0 0.5rem;
+    color: var(--accent-light);
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  th {
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    background: var(--surface-2);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  td {
+    padding: 0.6rem 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+  tr:hover td { background: rgba(108,92,231,0.04); }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .badge-on { background: var(--green-bg); color: var(--green); }
+  .badge-off { background: var(--red-bg); color: var(--red); }
+  .badge-high { background: var(--red-bg); color: var(--red); }
+  .badge-med { background: var(--yellow-bg); color: var(--yellow); }
+  .badge-low { background: rgba(116,185,255,0.12); color: var(--blue); }
+  .badge-rich { background: var(--green-bg); color: var(--green); }
+  .badge-moderate { background: var(--yellow-bg); color: var(--yellow); }
+  .badge-minimal { background: var(--red-bg); color: var(--red); }
+  .badge-empty { background: rgba(139,143,167,0.15); color: var(--text-dim); }
+  .badge-locked { background: rgba(108,92,231,0.15); color: var(--accent-light); }
+  .badge-open { background: var(--green-bg); color: var(--green); }
+
+  /* Action Items */
+  .action-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    background: var(--surface-2);
+  }
+  .action-item .priority {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 0.5rem;
+  }
+  .action-item.high .priority { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .action-item.med .priority { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+  .action-item.low .priority { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+  .action-item .text { font-size: 0.9rem; }
+  .action-item .tag {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 0.2rem;
+  }
+
+  /* Traffic source bar */
+  .traffic-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 0.5rem 0;
+  }
+  .traffic-bar div { height: 100%; }
+  .traffic-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    margin-top: 0.5rem;
+  }
+  .traffic-legend span::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    margin-right: 0.3rem;
+    vertical-align: middle;
+  }
+
+  /* Two column layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  @media (max-width: 768px) {
+    .two-col { grid-template-columns: 1fr; }
+    body { padding: 1rem; }
+  }
+
+  /* Leaderboard mini */
+  .lb-entry {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    font-size: 0.85rem;
+  }
+  .lb-rank {
+    width: 20px;
+    height: 20px;
+    background: var(--surface-2);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .lb-rank.gold { background: rgba(253,203,110,0.2); color: var(--yellow); }
+  .lb-rank.silver { background: rgba(116,185,255,0.15); color: var(--blue); }
+  .lb-rank.bronze { background: rgba(225,112,85,0.15); color: var(--orange); }
+  .lb-pts { margin-left: auto; color: var(--text-dim); font-size: 0.8rem; }
+
+  /* Rules list */
+  .rules-list {
+    list-style: none;
+    counter-reset: rule;
+  }
+  .rules-list li {
+    counter-increment: rule;
+    padding: 0.4rem 0;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .rules-list li::before {
+    content: counter(rule);
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    background: var(--surface-2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--accent-light);
+  }
+
+  .level-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.3rem 0;
+    font-size: 0.8rem;
+  }
+  .level-bar .bar {
+    flex: 1;
+    height: 6px;
+    background: var(--surface-2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .level-bar .bar .fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+  }
+  .level-bar .pct { color: var(--text-dim); width: 35px; text-align: right; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- HEADER -->
+<div class="header">
+  <h1>StackPack (Ads + AI + SaaS)</h1>
+  <div class="subtitle">Comprehensive Skool Group Audit Report</div>
+  <div class="date">Audit Date: April 12, 2026 - skool.com/stackpack</div>
+</div>
+
+<!-- DASHBOARD STATS -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="value">23</div>
+    <div class="label">Members</div>
+  </div>
+  <div class="stat-card">
+    <div class="value">$525</div>
+    <div class="label">MRR</div>
+  </div>
+  <div class="stat-card">
+    <div class="value">78%</div>
+    <div class="label">Engagement</div>
+  </div>
+  <div class="stat-card">
+    <div class="value">80%</div>
+    <div class="label">Retention</div>
+  </div>
+  <div class="stat-card">
+    <div class="value">15</div>
+    <div class="label">Courses</div>
+  </div>
+  <div class="stat-card">
+    <div class="value">33</div>
+    <div class="label">Community Posts</div>
+  </div>
+  <div class="stat-card">
+    <div class="value">4</div>
+    <div class="label">Weekly Events</div>
+  </div>
+  <div class="stat-card">
+    <div class="value">$27/mo</div>
+    <div class="label">Price</div>
+  </div>
+</div>
+
+<!-- ABOUT & ADMINS -->
+<div class="two-col">
+  <div class="section">
+    <h2>Group Overview</h2>
+    <table>
+      <tr><td style="color:var(--text-dim);width:140px">Creator</td><td>Michael Ensor (Owner)</td></tr>
+      <tr><td style="color:var(--text-dim)">Admin</td><td>Oliver Chwojko</td></tr>
+      <tr><td style="color:var(--text-dim)">Visibility</td><td>Private</td></tr>
+      <tr><td style="color:var(--text-dim)">Pricing</td><td>$27/month or $270/year</td></tr>
+      <tr><td style="color:var(--text-dim)">Free Trial</td><td>7 days</td></tr>
+      <tr><td style="color:var(--text-dim)">Members</td><td>23 (21 active, 2 admins)</td></tr>
+      <tr><td style="color:var(--text-dim)">Support Email</td><td>me@advertisingreportcard.com</td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Traffic Sources (30-day)</h2>
+    <p style="font-size:0.9rem;color:var(--text-dim);margin-bottom:0.75rem">73 visitors, 0 signups, 0.0% conversion</p>
+    <div class="traffic-bar">
+      <div style="width:49.3%;background:#6c5ce7"></div>
+      <div style="width:26%;background:#0984e3"></div>
+      <div style="width:15.1%;background:#e17055"></div>
+      <div style="width:4.1%;background:#00b894"></div>
+      <div style="width:2.7%;background:#636e72"></div>
+      <div style="width:1.4%;background:#fdcb6e"></div>
+      <div style="width:1.4%;background:#74b9ff"></div>
+    </div>
+    <div class="traffic-legend">
+      <span style="--c:#6c5ce7">Direct 49.3%</span>
+      <span style="--c:#0984e3">Facebook 26%</span>
+      <span style="--c:#e17055">Instagram 15.1%</span>
+      <span style="--c:#00b894">Google 4.1%</span>
+      <span style="--c:#636e72">X 2.7%</span>
+      <span style="--c:#fdcb6e">Affiliate 1.4%</span>
+      <span style="--c:#74b9ff">Skool 1.4%</span>
+    </div>
+    <p style="font-size:0.8rem;color:var(--red);margin-top:0.75rem;font-weight:600">0% conversion rate in 30 days - critical issue</p>
+  </div>
+</div>
+
+<!-- COMMUNITY -->
+<div class="section">
+  <h2>Community</h2>
+  <div class="two-col" style="gap:1rem">
+    <div>
+      <h3>Categories</h3>
+      <table>
+        <tr><th>Category</th><th>Permissions</th><th>Sort</th></tr>
+        <tr><td>Member Posts</td><td>Members</td><td>New</td></tr>
+        <tr><td>Help</td><td>Admins only</td><td>Default</td></tr>
+        <tr><td>Home</td><td>Admins only</td><td>Default</td></tr>
+      </table>
+      <h3 style="margin-top:1rem">Pinned Posts</h3>
+      <table>
+        <tr><td>START HERE Daily Dashboard</td><td style="color:var(--text-dim)">4 comments</td></tr>
+        <tr><td>Who We Are (Member Intros)</td><td style="color:var(--text-dim)">36 comments</td></tr>
+        <tr><td>Member Support</td><td style="color:var(--text-dim)">2 comments</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Post Activity</h3>
+      <table>
+        <tr><td style="color:var(--text-dim);width:160px">Total Posts</td><td>33</td></tr>
+        <tr><td style="color:var(--text-dim)">Zero-reply Posts</td><td>11 (all admin-authored)</td></tr>
+        <tr><td style="color:var(--text-dim)">Unanswered Member Posts</td><td style="color:var(--green)">0 - every post answered</td></tr>
+        <tr><td style="color:var(--text-dim)">Top Content Author</td><td>Oliver Chwojko (8 posts on Meta/Google Ads)</td></tr>
+      </table>
+      <h3 style="margin-top:1rem">Community Rules (8)</h3>
+      <ol class="rules-list">
+        <li>Don't Be a Downer</li>
+        <li>No Pitching, Ever</li>
+        <li>Show Your Work</li>
+        <li>Ask Smart Questions</li>
+        <li>Ship it or Shutter it</li>
+        <li>Give First, Ask Second</li>
+        <li>Be Real</li>
+        <li>Show Your Stack!</li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<!-- CLASSROOM DRILL-DOWN -->
+<div class="section">
+  <h2>Classroom (15 Courses)</h2>
+  <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:1rem">All courses show 0% completion across all members. Zero video content detected in any course. 12 courses gated behind Level 1. Content is primarily text-based with external links.</p>
+  <table>
+    <tr><th>Course</th><th>Lessons</th><th>Unlock</th><th>Content Depth</th><th>Key Topics</th></tr>
+    <tr>
+      <td><strong>A.I.</strong></td>
+      <td>11</td>
+      <td><span class="badge badge-locked">Level 1</span></td>
+      <td><span class="badge badge-rich">Rich</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">OpenClaw variants, AI Tools, Prompting, Images, ChatGPT, MCPs, Claude Code</td>
+    </tr>
+    <tr>
+      <td><strong>Vibe Coding</strong></td>
+      <td>10</td>
+      <td><span class="badge badge-locked">Level 1</span></td>
+      <td><span class="badge badge-rich">Rich</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">Claude Code, Lovable.dev, Cursor AI, AI Studio, CLI Tools, Prompts, Examples</td>
+    </tr>
+    <tr>
+      <td><strong>Advertising</strong></td>
+      <td>8</td>
+      <td><span class="badge badge-locked">Level 1</span></td>
+      <td><span class="badge badge-moderate">Moderate</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">Google Ads, Social Ads, YouTube Ads, Affiliate Marketing, Podcasts</td>
+    </tr>
+    <tr>
+      <td><strong>Automation</strong></td>
+      <td>5</td>
+      <td><span class="badge badge-locked">Level 1</span></td>
+      <td><span class="badge badge-moderate">Moderate</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">n8n, Zapier, Make.com, Automation Tools</td>
+    </tr>
+    <tr>
+      <td><strong>Team/Agencies</strong></td>
+      <td>5</td>
+      <td><span class="badge badge-locked">Level 1</span></td>
+      <td><span class="badge badge-moderate">Moderate</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">HR, Customer Success, Productivity, Project Management, Flowcharts</td>
+    </tr>
+    <tr>
+      <td><strong>Media</strong></td>
+      <td>5</td>
+      <td><span class="badge badge-locked">Level 1</span></td>
+      <td><span class="badge badge-moderate">Moderate</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">Image Design, Sound Design, Suno Music, Video Design</td>
+    </tr>
+    <tr>
+      <td><strong>StackPack Highlights</strong></td>
+      <td>5</td>
+      <td><span class="badge badge-open">Open</span></td>
+      <td><span class="badge badge-moderate">Moderate</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">Niche/Offer Mastery, Future-Proof Fridays, Course Voting, Gap Analysis</td>
+    </tr>
+    <tr>
+      <td><strong>Comet Browser</strong></td>
+      <td>5</td>
+      <td><span class="badge badge-locked">Level 1</span></td>
+      <td><span class="badge badge-moderate">Moderate</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">Setup, Shortcuts, Chat-to-Files, Crowd-sourcing</td>
+    </tr>
+    <tr>
+      <td><strong>Template</strong></td>
+      <td>4</td>
+      <td><span class="badge badge-open">Open</span></td>
+      <td><span class="badge badge-moderate">Moderate</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">Index, Offers, Tools, Post Types</td>
+    </tr>
+    <tr>
+      <td><strong>Web Design</strong></td>
+      <td>4</td>
+      <td><span class="badge badge-locked">Level 1</span></td>
+      <td><span class="badge badge-minimal">Light</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">Web Design Tools, Shopify, Lovable.dev</td>
+    </tr>
+    <tr>
+      <td><strong>CRM</strong></td>
+      <td>2</td>
+      <td><span class="badge badge-locked">Level 1</span></td>
+      <td><span class="badge badge-minimal">Minimal</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">CRM Software, GoHighLevel</td>
+    </tr>
+    <tr>
+      <td><strong>Sales</strong></td>
+      <td>2</td>
+      <td><span class="badge badge-open">Open</span></td>
+      <td><span class="badge badge-minimal">Light</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">Sales Calls, Agency Co-op</td>
+    </tr>
+    <tr>
+      <td><strong>Legal</strong></td>
+      <td>1</td>
+      <td><span class="badge badge-locked">Level 1</span></td>
+      <td><span class="badge badge-minimal">Light</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">Contract Templates (reference only)</td>
+    </tr>
+    <tr>
+      <td><strong>Pack Member Glossary</strong></td>
+      <td>1</td>
+      <td><span class="badge badge-locked">Level 1</span></td>
+      <td><span class="badge badge-empty">Empty</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">Single member link (MyAiTeam.com)</td>
+    </tr>
+    <tr>
+      <td><strong>Finance</strong></td>
+      <td>1</td>
+      <td><span class="badge badge-locked">Level 1</span></td>
+      <td><span class="badge badge-empty">Empty</span></td>
+      <td style="font-size:0.8rem;color:var(--text-dim)">Placeholder "New page" - no content</td>
+    </tr>
+  </table>
+  <p style="font-size:0.8rem;color:var(--text-dim);margin-top:0.75rem"><strong>Total lessons across all courses: 69</strong> | Average: 4.6 lessons per course | Content format: 100% text/links, 0% video</p>
+</div>
+
+<!-- CALENDAR & EVENTS -->
+<div class="two-col">
+  <div class="section">
+    <h2>Calendar (4 Weekly Events)</h2>
+    <table>
+      <tr><th>Event</th><th>Day</th><th>Time</th></tr>
+      <tr><td>Pack Mentality - Set Goals</td><td>Monday</td><td>12:00 PM</td></tr>
+      <tr><td>LIVE Co-Work</td><td>Tue/Wed/Thu</td><td>12:00 PM</td></tr>
+      <tr><td>StackPack Spotlight</td><td>Wednesday</td><td>3:00 PM</td></tr>
+      <tr><td>Future-Proof Fridays</td><td>Friday</td><td>12:00 PM</td></tr>
+    </table>
+    <p style="font-size:0.8rem;color:var(--yellow);margin-top:0.75rem">All events use external Zoom link - Skool Call not utilized</p>
+  </div>
+
+  <div class="section">
+    <h2>Map</h2>
+    <table>
+      <tr><td style="color:var(--text-dim);width:100px">Status</td><td><span class="badge badge-on">Enabled</span></td></tr>
+      <tr><td style="color:var(--text-dim)">Pins</td><td>9 member pins placed</td></tr>
+      <tr><td style="color:var(--text-dim)">Coverage</td><td>39% of members have pinned</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- LEADERBOARDS -->
+<div class="section">
+  <h2>Leaderboards</h2>
+  <div class="two-col" style="gap:1rem">
+    <div>
+      <h3>Level Distribution</h3>
+      <div class="level-bar"><span style="width:55px">Level 1</span><div class="bar"><div class="fill" style="width:44%"></div></div><span class="pct">44%</span></div>
+      <div class="level-bar"><span style="width:55px">Level 2</span><div class="bar"><div class="fill" style="width:43%"></div></div><span class="pct">43%</span></div>
+      <div class="level-bar"><span style="width:55px">Level 3</span><div class="bar"><div class="fill" style="width:4%"></div></div><span class="pct">4%</span></div>
+      <div class="level-bar"><span style="width:55px">Level 4</span><div class="bar"><div class="fill" style="width:9%"></div></div><span class="pct">9%</span></div>
+      <div class="level-bar"><span style="width:55px">Level 5-9</span><div class="bar"><div class="fill" style="width:0%"></div></div><span class="pct">0%</span></div>
+      <p style="font-size:0.8rem;color:var(--yellow);margin-top:0.5rem">Default level names (Level 1-9) - no custom branding</p>
+      <p style="font-size:0.8rem;color:var(--red);margin-top:0.25rem">7-day leaderboard: zero activity</p>
+    </div>
+    <div>
+      <h3>All-Time Top 10</h3>
+      <div class="lb-entry"><span class="lb-rank gold">1</span> Lauren Steele <span class="lb-pts">20 pts</span></div>
+      <div class="lb-entry"><span class="lb-rank silver">2</span> James Seagraves <span class="lb-pts">19 pts</span></div>
+      <div class="lb-entry"><span class="lb-rank bronze">3</span> DeAndre Simmons <span class="lb-pts">17 pts</span></div>
+      <div class="lb-entry"><span class="lb-rank">4</span> Abdus Sami <span class="lb-pts">16 pts</span></div>
+      <div class="lb-entry"><span class="lb-rank">5</span> Brendan Mulvenna <span class="lb-pts">12 pts</span></div>
+      <div class="lb-entry"><span class="lb-rank">6</span> Andy Morrison <span class="lb-pts">10 pts</span></div>
+      <div class="lb-entry"><span class="lb-rank">7</span> Natasha Kaurra <span class="lb-pts">9 pts</span></div>
+      <div class="lb-entry"><span class="lb-rank">8</span> Charlotte Baxter <span class="lb-pts">9 pts</span></div>
+      <div class="lb-entry"><span class="lb-rank">9</span> Cesar Cancino <span class="lb-pts">9 pts</span></div>
+      <div class="lb-entry"><span class="lb-rank">10</span> Timothy Everline <span class="lb-pts">8 pts</span></div>
+      <h3 style="margin-top:0.75rem">30-Day Active</h3>
+      <div class="lb-entry"><span class="lb-rank gold">1</span> Natasha Kaurra <span class="lb-pts">+3</span></div>
+      <div class="lb-entry"><span class="lb-rank silver">2</span> Abdus Sami <span class="lb-pts">+1</span></div>
+      <div class="lb-entry"><span class="lb-rank bronze">3</span> Brendan Mulvenna <span class="lb-pts">+1</span></div>
+      <div class="lb-entry"><span class="lb-rank">4</span> DeAndre Simmons <span class="lb-pts">+1</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- PLUGINS & SETTINGS -->
+<div class="section">
+  <h2>Plugins & Settings</h2>
+  <div class="two-col" style="gap:1rem">
+    <div>
+      <h3>Active Plugins</h3>
+      <table>
+        <tr><td>Auto DM new members</td><td><span class="badge badge-on">On</span></td></tr>
+        <tr><td>Onboarding video</td><td><span class="badge badge-on">On</span></td></tr>
+        <tr><td>Zapier integration</td><td><span class="badge badge-on">On</span></td></tr>
+        <tr><td>Meta Pixel tracking</td><td><span class="badge badge-on">On</span></td></tr>
+        <tr><td>Google Ads tracking</td><td><span class="badge badge-on">On</span></td></tr>
+        <tr><td>Links</td><td><span class="badge badge-on">On</span></td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Inactive Plugins</h3>
+      <table>
+        <tr><td>Membership questions</td><td><span class="badge badge-off">Off</span></td></tr>
+        <tr><td>Unlock chat at level</td><td><span class="badge badge-off">Off</span></td></tr>
+        <tr><td>Unlock posting at level</td><td><span class="badge badge-off">Off</span></td></tr>
+        <tr><td>Cancellation video</td><td><span class="badge badge-off">Off</span></td></tr>
+        <tr><td>Instant approval</td><td><span class="badge badge-off">Off</span></td></tr>
+        <tr><td>Webhook</td><td><span class="badge badge-off">Off</span></td></tr>
+        <tr><td>Hyros tracking</td><td><span class="badge badge-off">Off</span></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="two-col" style="gap:1rem;margin-top:1rem">
+    <div>
+      <h3>Tabs</h3>
+      <table>
+        <tr><td>Classroom</td><td><span class="badge badge-on">On</span></td></tr>
+        <tr><td>Calendar</td><td><span class="badge badge-on">On</span></td></tr>
+        <tr><td>Map</td><td><span class="badge badge-on">On</span></td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Other Settings</h3>
+      <table>
+        <tr><td style="color:var(--text-dim)">Affiliate Program</td><td><span class="badge badge-off">Off</span></td></tr>
+        <tr><td style="color:var(--text-dim)">Skool Call</td><td style="color:var(--yellow)">Not used (external Zoom)</td></tr>
+        <tr><td style="color:var(--text-dim)">Custom Level Names</td><td style="color:var(--yellow)">Not set (defaults)</td></tr>
+        <tr><td style="color:var(--text-dim)">Drip Content</td><td><span class="badge badge-off">Not configured</span></td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- GAP ANALYSIS -->
+<div class="section">
+  <h2>Gap Analysis - Feature Utilization Matrix</h2>
+  <table>
+    <tr><th>Feature</th><th>Status</th><th>Impact</th><th>Assessment</th></tr>
+    <tr>
+      <td>Membership Questions</td>
+      <td><span class="badge badge-off">Off</span></td>
+      <td><span class="badge badge-high">High</span></td>
+      <td style="font-size:0.85rem">Missing qualification data. No way to segment members by skill level, business type, or goals at signup.</td>
+    </tr>
+    <tr>
+      <td>Cancellation Video</td>
+      <td><span class="badge badge-off">Off</span></td>
+      <td><span class="badge badge-high">High</span></td>
+      <td style="font-size:0.85rem">At $27/mo with 80% retention, each save matters. A personal video from Michael could prevent 2-3 cancellations/quarter.</td>
+    </tr>
+    <tr>
+      <td>Affiliate Program</td>
+      <td><span class="badge badge-off">Off</span></td>
+      <td><span class="badge badge-high">High</span></td>
+      <td style="font-size:0.85rem">0% conversion on 73 visitors. Affiliates could drive warm, pre-qualified traffic. Classroom already has affiliate content ready.</td>
+    </tr>
+    <tr>
+      <td>Video Content in Courses</td>
+      <td><span class="badge badge-off">None</span></td>
+      <td><span class="badge badge-high">High</span></td>
+      <td style="font-size:0.85rem">All 15 courses are text-only. For $27/mo, members expect multimedia. Weekly calls generate content that could be repurposed.</td>
+    </tr>
+    <tr>
+      <td>Course Completion (0% all)</td>
+      <td><span class="badge badge-off">0%</span></td>
+      <td><span class="badge badge-high">High</span></td>
+      <td style="font-size:0.85rem">No member has completed any course. Either content isn't discoverable, isn't compelling enough, or members don't know it exists.</td>
+    </tr>
+    <tr>
+      <td>Custom Level Names</td>
+      <td><span class="badge badge-off">Default</span></td>
+      <td><span class="badge badge-med">Medium</span></td>
+      <td style="font-size:0.85rem">Pack branding is strong ("Pack Mentality", "wolves") but levels are generic. Custom names reinforce culture and gamification.</td>
+    </tr>
+    <tr>
+      <td>Skool Call</td>
+      <td><span class="badge badge-off">Unused</span></td>
+      <td><span class="badge badge-med">Medium</span></td>
+      <td style="font-size:0.85rem">External Zoom works but loses native recording, replays, and engagement tracking. Skool Call auto-posts replays.</td>
+    </tr>
+    <tr>
+      <td>Drip Content</td>
+      <td><span class="badge badge-off">Not used</span></td>
+      <td><span class="badge badge-med">Medium</span></td>
+      <td style="font-size:0.85rem">No progressive content delivery. All 69 lessons dump at once. Drip creates momentum and reduces overwhelm.</td>
+    </tr>
+    <tr>
+      <td>Empty/Shell Courses</td>
+      <td><span class="badge badge-off">2 empty</span></td>
+      <td><span class="badge badge-med">Medium</span></td>
+      <td style="font-size:0.85rem">Finance (empty page) and Pack Member Glossary (single link) create a hollow impression. Remove or build out.</td>
+    </tr>
+    <tr>
+      <td>Conversion Rate</td>
+      <td><span class="badge badge-off">0.0%</span></td>
+      <td><span class="badge badge-high">High</span></td>
+      <td style="font-size:0.85rem">73 visitors, 0 signups in 30 days. About page, pricing, or value proposition isn't converting traffic into trials.</td>
+    </tr>
+    <tr>
+      <td>Meta Pixel / Google Ads</td>
+      <td><span class="badge badge-on">On</span></td>
+      <td><span class="badge badge-low">Good</span></td>
+      <td style="font-size:0.85rem">Tracking is properly configured. But with 0% conversion, the data shows the funnel is broken downstream.</td>
+    </tr>
+    <tr>
+      <td>Auto DM</td>
+      <td><span class="badge badge-on">On</span></td>
+      <td><span class="badge badge-low">Good</span></td>
+      <td style="font-size:0.85rem">Active onboarding touchpoint. Combined with onboarding video, new members get two welcome triggers.</td>
+    </tr>
+    <tr>
+      <td>Zapier</td>
+      <td><span class="badge badge-on">On</span></td>
+      <td><span class="badge badge-low">Good</span></td>
+      <td style="font-size:0.85rem">Connected for automation. Could be leveraged for CRM sync, email sequences, or member milestone notifications.</td>
+    </tr>
+    <tr>
+      <td>Community Rules</td>
+      <td><span class="badge badge-on">8 rules</span></td>
+      <td><span class="badge badge-low">Good</span></td>
+      <td style="font-size:0.85rem">Well-defined, on-brand rules aligned with pack culture. "Ship it or Shutter it" and "Show Your Stack" reinforce action bias.</td>
+    </tr>
+    <tr>
+      <td>Admin Response Rate</td>
+      <td><span class="badge badge-on">100%</span></td>
+      <td><span class="badge badge-low">Excellent</span></td>
+      <td style="font-size:0.85rem">Every single member post received an admin response. This is the group's greatest operational strength.</td>
+    </tr>
+    <tr>
+      <td>Map</td>
+      <td><span class="badge badge-on">9 pins</span></td>
+      <td><span class="badge badge-low">Fine</span></td>
+      <td style="font-size:0.85rem">39% pin rate for a 23-member group is reasonable. Could prompt remaining members during onboarding.</td>
+    </tr>
+  </table>
+</div>
+
+<!-- PRIORITIZED ACTION ITEMS -->
+<div class="section">
+  <h2>Prioritized Action Items</h2>
+
+  <h3 style="color:var(--red)">High Priority - Do This Week</h3>
+
+  <div class="action-item high">
+    <div class="priority"></div>
+    <div>
+      <div class="text"><strong>Fix the 0% conversion rate.</strong> 73 visitors in 30 days with zero signups means the About page isn't working. Review the copy, value proposition, social proof, and CTA. Consider adding member testimonials and a "what you get" breakdown. This is the #1 growth blocker.</div>
+      <div class="tag">Growth - About Page</div>
+    </div>
+  </div>
+
+  <div class="action-item high">
+    <div class="priority"></div>
+    <div>
+      <div class="text"><strong>Turn on Membership Questions.</strong> Ask 2-3 questions at signup: "What's your business/role?", "What's your biggest challenge right now?", "How did you hear about us?" This gives you segmentation data, personalization hooks, and attribution - all for free.</div>
+      <div class="tag">Plugin - Membership Questions</div>
+    </div>
+  </div>
+
+  <div class="action-item high">
+    <div class="priority"></div>
+    <div>
+      <div class="text"><strong>Add video to courses.</strong> Record the weekly Zoom calls and drop replays into relevant courses. Even 3-5 recordings in A.I. and Vibe Coding would transform the classroom from a link library into actual courseware. 0% completion across all members means the text-only format isn't engaging.</div>
+      <div class="tag">Classroom - Content</div>
+    </div>
+  </div>
+
+  <div class="action-item high">
+    <div class="priority"></div>
+    <div>
+      <div class="text"><strong>Enable the Affiliate Program.</strong> Set to 30-40%. The Advertising course already has an affiliate lesson. With 0% organic conversion, member referrals are the fastest path to warm leads. Incentivized word-of-mouth from 23 engaged members beats cold traffic.</div>
+      <div class="tag">Plugin - Affiliates</div>
+    </div>
+  </div>
+
+  <h3 style="color:var(--yellow)">Medium Priority - This Month</h3>
+
+  <div class="action-item med">
+    <div class="priority"></div>
+    <div>
+      <div class="text"><strong>Create a Cancellation Video.</strong> 80% retention is good but every saved member is $27/mo. A short video from Michael - "Before you go, here's what's coming..." - is proven to reduce churn by 5-15% on Skool.</div>
+      <div class="tag">Plugin - Retention</div>
+    </div>
+  </div>
+
+  <div class="action-item med">
+    <div class="priority"></div>
+    <div>
+      <div class="text"><strong>Set custom Level Names.</strong> Replace Level 1-9 with pack-themed names. Example: Pup, Scout, Hunter, Tracker, Howler, Alpha, Pack Lead, Apex, Legend. This reinforces the wolf pack brand and makes gamification meaningful.</div>
+      <div class="tag">Branding - Gamification</div>
+    </div>
+  </div>
+
+  <div class="action-item med">
+    <div class="priority"></div>
+    <div>
+      <div class="text"><strong>Remove or build out empty courses.</strong> Finance has a blank "New page." Pack Member Glossary has a single link. Either add real content or hide them - empty shells erode perceived value at $27/mo.</div>
+      <div class="tag">Classroom - Cleanup</div>
+    </div>
+  </div>
+
+  <div class="action-item med">
+    <div class="priority"></div>
+    <div>
+      <div class="text"><strong>Consider Skool Call for at least 1 weekly event.</strong> The Wednesday Spotlight would be a natural fit. Skool Call auto-posts replays in the community, driving engagement. Keep Zoom for the co-work sessions where flexibility matters.</div>
+      <div class="tag">Events - Platform Feature</div>
+    </div>
+  </div>
+
+  <h3 style="color:var(--blue)">Nice-to-Have - Next Quarter</h3>
+
+  <div class="action-item low">
+    <div class="priority"></div>
+    <div>
+      <div class="text"><strong>Implement drip content for new members.</strong> Gate advanced courses behind time-in-group or level progression. Reduces information overload and creates a sense of unlocking progression.</div>
+      <div class="tag">Classroom - Drip</div>
+    </div>
+  </div>
+
+  <div class="action-item low">
+    <div class="priority"></div>
+    <div>
+      <div class="text"><strong>Prompt remaining members to use Map.</strong> Mention map pins in onboarding DM or Daily Dashboard. Small lift for community feel, especially with the pack identity.</div>
+      <div class="tag">Community - Map</div>
+    </div>
+  </div>
+
+  <div class="action-item low">
+    <div class="priority"></div>
+    <div>
+      <div class="text"><strong>Consolidate or archive low-value courses.</strong> 15 courses at 4.6 avg lessons/each is broad but thin. Consider merging related courses (CRM + Sales, Legal + Team/Agencies) into fewer, deeper courses.</div>
+      <div class="tag">Classroom - Structure</div>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div style="text-align:center;padding:2rem;color:var(--text-dim);font-size:0.8rem">
+  StackPack Skool Audit - Generated April 12, 2026<br>
+  Data collected via admin access to skool.com/stackpack
+</div>
+
+</div>
+</body>
+</html>

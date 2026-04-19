@@ -1,7 +1,7 @@
-# ghost-browser primitive contract
+# arc-browser primitive contract
 
 Any tool that automates a browser against a specific site should implement the
-same primitives ghost-browser does. This lets future agents move between sites
+same primitives arc-browser does. This lets future agents move between sites
 with a predictable surface area.
 
 ## The contract
@@ -53,7 +53,7 @@ and Playwright driver hiccups should not bubble up as fatal errors.
 
 ## Tool-level surface
 
-Every browser automation tool (ghost-browser, skool-manager's browser layer,
+Every browser automation tool (arc-browser, skool-manager's browser layer,
 future gmail-manager, etc.) should expose equivalents of:
 
 - `*_navigate(url, wait_for_selector?)` - SPA-safe nav

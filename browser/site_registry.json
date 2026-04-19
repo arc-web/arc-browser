@@ -1,0 +1,20 @@
+{
+  "skool.com": {
+    "risk": "low",
+    "mode": "headed",
+    "actions_per_hour": 60,
+    "waits": { "default": "load", "post_nav_ms": 2000 },
+    "auth": {
+      "login_url": "https://www.skool.com/login",
+      "credential_item": "Skool",
+      "form": {
+        "email_selector": "input[type=\"email\"], input[name=\"email\"]",
+        "password_selector": "input[type=\"password\"], input[name=\"password\"]",
+        "submit": "enter"
+      },
+      "verify_url": "https://www.skool.com/feed",
+      "verify_not_contains": "skool.com/login"
+    },
+    "notes": "SPA - always use navigate_ready with post-nav settle. Login form selectors work for both email and username login flows."
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "@superClaude/browser-automation-agent",
+  "version": "0.1.0",
+  "description": "Autonomous browser automation agent with real-time feedback and natural language task execution",
+  "main": "dist/browser_automation_agent.js",
+  "types": "dist/browser_automation_agent.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "example:simple": "ts-node examples/slack_oauth_example.ts 1",
+    "example:conversational": "ts-node examples/slack_oauth_example.ts 2",
+    "example:workflow": "ts-node examples/slack_oauth_example.ts 3",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed"
+  },
+  "keywords": [
+    "browser-automation",
+    "playwright",
+    "ai-agent",
+    "natural-language",
+    "real-time-feedback",
+    "autonomous-execution"
+  ],
+  "author": "SuperClaude Framework",
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "events": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "ts-node": "^10.9.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

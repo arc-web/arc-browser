@@ -1,8 +1,9 @@
 """
-Ghost Browser - MCP Server
+ARC Browser - MCP Server
 
 Gives Claude Code a stealthy, autonomous browser via natural language tool calls.
 Generic by design - site-specific behavior lives in config/site_registry.json.
+Includes Skool-specific tools for community auditing.
 """
 import asyncio
 import base64
@@ -27,10 +28,10 @@ from router import classify, get_recipe
 from agent import run_task
 from utils.human import human_click, human_type, human_delay
 
-mcp = FastMCP("ghost-browser")
+mcp = FastMCP("arc-browser")
 
 # Persistent rate limiter (survives server restarts)
-_RATE_FILE = Path.home() / ".ghost-browser" / "rate.json"
+_RATE_FILE = Path.home() / ".arc-browser" / "rate.json"
 
 
 def _load_rate() -> dict:
@@ -202,7 +203,7 @@ async def browser_preflight(url: str) -> str:
 @mcp.tool()
 async def browser_introspect(url: str) -> str:
     """
-    Describe everything ghost-browser knows about this URL - mode, auth, waits,
+    Describe everything arc-browser knows about this URL - mode, auth, waits,
     rate limit remaining, recipe notes. Call this before acting on an unfamiliar
     site to figure out which primitives are available and what to expect.
 
@@ -299,6 +300,71 @@ async def browser_verify_auth(site_id: str) -> str:
     """
     result = await verify_auth(site_id)
     return json.dumps(result, indent=2)
+
+
+# -- Skool-specific tools -----------------------------------------------------
+
+SKOOL_SESSION = "skool"
+
+
+@mcp.tool()
+async def skool_auth_refresh(force: bool = False) -> str:
+    """
+    Ensure a valid Skool session exists. Idempotent: skips if already logged in.
+    Pulls credentials from 1Password item 'Skool'.
+    Returns JSON: {"status": "logged_in"|"already"|"failed", "reason": str}.
+    """
+    result = await auto_login("skool.com", session=SKOOL_SESSION, force=force)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def skool_verify_session() -> str:
+    """
+    Check whether the Skool session is authenticated without re-logging in.
+    Returns JSON: {"authenticated": bool, "url": str}.
+    """
+    result = await verify_auth("skool.com", session=SKOOL_SESSION)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def skool_scan(slug: str, resume: bool = False) -> str:
+    """
+    Run a full Skool group scan. Writes to ~/.skool/scans/<slug>/<ts>/raw.json.
+    Returns the path to the generated raw.json.
+    """
+    import subprocess as _sp
+    scripts_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts")
+    cmd = ["python3", os.path.join(scripts_dir, "collect.py"), "--slug", slug]
+    if resume:
+        cmd.append("--resume")
+    proc = await asyncio.create_subprocess_exec(
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+    stdout, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        return f"scan failed: {stderr.decode()}"
+    return stdout.decode()
+
+
+@mcp.tool()
+async def skool_onboard(slug: str, client_id: str = None) -> str:
+    """
+    Verify admin access for a Skool slug. Writes ~/.skool/clients/<id>.json.
+    """
+    import subprocess as _sp
+    scripts_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts")
+    cmd = ["python3", os.path.join(scripts_dir, "onboard.py"), "--slug", slug]
+    if client_id:
+        cmd += ["--client-id", client_id]
+    proc = await asyncio.create_subprocess_exec(
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+    )
+    stdout, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        return f"onboard failed: {stderr.decode()}"
+    return stdout.decode()
 
 
 if __name__ == "__main__":

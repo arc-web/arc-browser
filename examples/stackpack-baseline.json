@@ -1,0 +1,134 @@
+{
+  "slug": "stackpack",
+  "scanned_at": "2026-04-12",
+  "about": {
+    "groupName": "StackPack (Ads + AI + SaaS)",
+    "members": "23",
+    "online": "1",
+    "admins": "2",
+    "pricing": "$27/month",
+    "privacy": "Private",
+    "creator": "Michael Ensor"
+  },
+  "members": {
+    "active": "21",
+    "totalMembers": 23,
+    "admins": [
+      {"name": "Michael Ensor", "role": "Owner"},
+      {"name": "Oliver Chwojko", "role": "Admin"}
+    ]
+  },
+  "dashboard": {
+    "mrr": 525,
+    "engagement": 78,
+    "retention": 80,
+    "visitors_30d": 73,
+    "signups_30d": 0,
+    "conversion_rate": 0.0,
+    "traffic": {
+      "Direct": 49.3,
+      "Facebook": 26.0,
+      "Instagram": 15.1,
+      "Google": 4.1,
+      "X": 2.7,
+      "Affiliate": 1.4,
+      "Skool": 1.4
+    }
+  },
+  "community": {
+    "categories": [
+      {"name": "🐺 Member Posts", "permissions": "Members", "sort": "New"},
+      {"name": "❤️ Help", "permissions": "Admins", "sort": "Default"},
+      {"name": "🏠 Home", "permissions": "Admins", "sort": "Default"}
+    ],
+    "rules": [
+      "Don't Be a Downer",
+      "No Pitching, Ever",
+      "Show Your Work",
+      "Ask Smart Questions",
+      "Ship it or Shutter it",
+      "Give First, Ask Second",
+      "Be Real",
+      "Show Your Stack!"
+    ],
+    "total_posts": 33,
+    "zero_reply_posts": 11,
+    "unanswered_member_posts": 0,
+    "pinned_posts": [
+      {"title": "Welcome to StackPack!", "author": "Michael Ensor"},
+      {"title": "Community Rules + How This Works", "author": "Michael Ensor"}
+    ]
+  },
+  "classroom": {
+    "course_count": 15,
+    "total_lessons": 69,
+    "video_count": 0,
+    "courses": [
+      {"name": "A.I.", "lessons": 11, "unlock": "Level 1", "depth": "Rich", "topics": "OpenClaw variants, AI Tools, Prompting, ChatGPT, MCPs, Claude Code"},
+      {"name": "Vibe Coding", "lessons": 10, "unlock": "Level 1", "depth": "Rich", "topics": "Claude Code, Lovable.dev, Cursor AI, AI Studio, CLI Tools"},
+      {"name": "Advertising", "lessons": 8, "unlock": "Level 1", "depth": "Moderate", "topics": "Google Ads, Social Ads, YouTube Ads, Affiliate Marketing"},
+      {"name": "Automation", "lessons": 5, "unlock": "Level 1", "depth": "Moderate", "topics": "n8n, Zapier, Make.com"},
+      {"name": "Team/Agencies", "lessons": 5, "unlock": "Level 1", "depth": "Moderate", "topics": "HR, Customer Success, Productivity, Flowcharts"},
+      {"name": "Media", "lessons": 5, "unlock": "Level 1", "depth": "Moderate", "topics": "Image Design, Sound Design, Suno Music, Video"},
+      {"name": "StackPack Highlights", "lessons": 5, "unlock": "Open", "depth": "Moderate", "topics": "Niche/Offer Mastery, Future-Proof Fridays"},
+      {"name": "Comet Browser", "lessons": 5, "unlock": "Level 1", "depth": "Moderate", "topics": "Setup, Shortcuts, Crowd-sourcing"},
+      {"name": "Template", "lessons": 4, "unlock": "Open", "depth": "Moderate", "topics": "Index, Offers, Tools, Post Types"},
+      {"name": "Web Design", "lessons": 4, "unlock": "Level 1", "depth": "Light", "topics": "Web Design Tools, Shopify, Lovable.dev"},
+      {"name": "CRM", "lessons": 2, "unlock": "Level 1", "depth": "Minimal", "topics": "CRM Software, GoHighLevel"},
+      {"name": "Sales", "lessons": 2, "unlock": "Open", "depth": "Light", "topics": "Sales Calls, Agency Co-op"},
+      {"name": "Legal", "lessons": 1, "unlock": "Level 1", "depth": "Light", "topics": "Contract Templates"},
+      {"name": "Pack Member Glossary", "lessons": 1, "unlock": "Level 1", "depth": "Empty", "topics": "Single member link"},
+      {"name": "Finance", "lessons": 1, "unlock": "Level 1", "depth": "Empty", "topics": "Placeholder new page"}
+    ]
+  },
+  "calendar": {
+    "events": [
+      {"name": "🧠 Pack Mentality - Set Goals", "day": "Monday", "time": "12:00 PM"},
+      {"name": "😎👉 LIVE Co-Work", "day": "Tue/Wed/Thu", "time": "12:00 PM"},
+      {"name": "🔥👀 StackPack Spotlight", "day": "Wednesday", "time": "3:00 PM"},
+      {"name": "🐺 Future-Proof Fridays", "day": "Friday", "time": "12:00 PM"}
+    ],
+    "uses_skool_call": false,
+    "uses_zoom": true
+  },
+  "map": {"enabled": true, "pins": 9},
+  "leaderboards": {
+    "level_distribution": {"1": 44, "2": 43, "3": 4, "4": 9, "5": 0, "6": 0, "7": 0, "8": 0, "9": 0},
+    "custom_levels": false,
+    "seven_day_empty": true,
+    "all_time_top10": [
+      {"rank": 1, "name": "Lauren Steele", "points": 20},
+      {"rank": 2, "name": "James Seagraves", "points": 19},
+      {"rank": 3, "name": "DeAndre Simmons", "points": 17},
+      {"rank": 4, "name": "Abdus Sami", "points": 16},
+      {"rank": 5, "name": "Brendan Mulvenna", "points": 12},
+      {"rank": 6, "name": "Andy Morrison", "points": 10},
+      {"rank": 7, "name": "Natasha Kaurra", "points": 9},
+      {"rank": 8, "name": "Charlotte Baxter", "points": 9},
+      {"rank": 9, "name": "Cesar Cancino", "points": 9},
+      {"rank": 10, "name": "Timothy Everline", "points": 8}
+    ]
+  },
+  "settings": {
+    "plugins": {
+      "Membership questions": false,
+      "Unlock chat at level": false,
+      "Unlock posting": false,
+      "Auto DM new members": true,
+      "Onboarding video": true,
+      "Zapier integration": true,
+      "Meta pixel tracking": true,
+      "Cancellation video": false,
+      "Google ads tracking": true,
+      "Links": true,
+      "Instant approval": false,
+      "Webhook": false,
+      "Hyros tracking": false
+    },
+    "tabs": {"Classroom": true, "Calendar": true, "Map": true},
+    "affiliates": false,
+    "pricing_model": "Subscription",
+    "trial_days": 7,
+    "support_email": null
+  }
+}

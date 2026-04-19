@@ -4,6 +4,9 @@ __pycache__/
 .env
 sessions/
 extensions/
+node_modules/
+playwright/mcp/dist/
+playwright/agent/dist/
 .DS_Store
 *.egg-info/
 dist/

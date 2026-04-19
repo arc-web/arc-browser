@@ -28,7 +28,7 @@ A stealth browser automation agent that gives Claude Code (or any MCP client) re
                         |    server.py      |
                         |  (FastMCP server) |
                         |  Rate limiter     |
-                        |  12 tool endpoints|
+                        |  16 tool endpoints|
                         +--------+----------+
                                  |
                     +------------+------------+
@@ -252,20 +252,37 @@ Set `VPS_BROWSERLESS_URL` in `.env` to a Browserless instance endpoint for remot
 
 ```
 arc-browser/
-  arc_browser/
-    server.py           # MCP server - tool definitions, rate limiter
-    browser.py          # Session pool, context factory, stale lock cleanup
-    agent.py            # Autonomous browser-use agent + Ollama
-    router.py           # URL classifier (domain -> mode/risk/rate)
+  arc_browser/              # MCP server (generic browser tools)
+    server.py               # 16 MCP tools: browser_* + skool_*
+    browser.py              # Session pool, context factory, stealth
+    agent.py                # Autonomous browser-use + Ollama
+    router.py               # URL classifier (domain -> mode/risk/rate)
     config/
-      settings.py       # Paths, env vars, monitor detection
-      site_registry.json # Per-domain configuration
+      settings.py           # Paths, env vars, monitor detection
+      site_registry.json    # Per-domain config (incl. Skool, GitHub auth recipes)
     utils/
-      human.py          # Human-like delays, clicks, typing
-      credentials.py    # 1Password CLI integration
-  extensions/           # Chrome extensions (loaded in headed mode)
-  sessions/             # Persistent browser profiles (gitignored)
-  docs/                 # Architecture docs
+      human.py              # Bezier clicks, log-normal delays, human typing
+      credentials.py        # 1Password CLI integration
+  browser/                  # Skool-tuned browser primitives (used by scripts/)
+  skool/                    # Skool scanner, gap analysis, HTML report generator
+    scanner.py              # Extracts all Skool sections via JS evaluation
+    paginator.py            # Scroll-until-stable helpers
+    gap.py                  # 21-feature gap analysis matrix
+    report.py               # Dark-themed HTML audit report
+  scripts/                  # CLI tools for Skool auditing
+    collect.py              # Full autonomous scan (no AI needed)
+    onboard.py              # Admin access verification
+    interpret.py            # Claude Code handoff for narratives
+    deliver.py              # Render interpreted scan to HTML
+    run_scan.py             # Quick CLI for reports from baseline data
+  playwright/               # Legacy TypeScript Playwright MCP (reference)
+    mcp/                    # Intent parser, stealth engine, HTTP transport
+    agent/                  # EventEmitter-based autonomous agent
+  app_integrations/         # Provider-specific browser recipes
+  examples/                 # Baseline scan data, sample reports
+  templates/                # Report CSS templates
+  sessions/                 # Persistent Chrome profiles (gitignored)
+  docs/
   requirements.txt
   .env.example
 ```
