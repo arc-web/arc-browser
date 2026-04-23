@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from patchright.async_api import async_playwright
 from playwright_stealth import stealth_async
 from config.settings import SESSIONS_DIR, EXTENSIONS_DIR, SECOND_MONITOR_X, VPS_BROWSERLESS_URL
+from .cf_recovery import recover_cf
 
 _sessions: dict = {}
 _pw = None
@@ -182,6 +183,7 @@ async def navigate_ready(page, url: str, wait_for_selector: str = None,
     - Adds post_nav settle time for SPA hydration
     """
     await page.goto(url, wait_until=wait_until, timeout=timeout)
+    await recover_cf(page, url)
     if wait_for_selector:
         await page.wait_for_selector(wait_for_selector, timeout=timeout)
     if post_nav_ms:

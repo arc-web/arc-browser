@@ -13,6 +13,13 @@ _REGISTRY = json.loads(
 # Sites where even Patchright isn't enough - need real Chrome via CDP
 _CDP_REQUIRED = {"linkedin.com", "twitter.com", "x.com", "facebook.com"}
 
+# Scraping keywords that indicate data extraction intent
+SCRAPING_KEYWORDS = {
+    "scrape", "crawl", "extract", "collect", "harvest",
+    "list all", "get all", "fetch all", "iterate", "pull data",
+    "find all", "enumerate", "gather", "mine", "bulk", "all pages",
+}
+
 
 def _domain_of(url_or_domain: str) -> str:
     if "://" in url_or_domain:
@@ -28,10 +35,11 @@ def get_recipe(url_or_domain: str) -> dict:
     return _REGISTRY.get(_domain_of(url_or_domain), {})
 
 
-def classify(url: str, needs_extensions: bool = False) -> dict:
+def classify(url: str, needs_extensions: bool = False, task: str = "") -> dict:
     """
     Classify a URL and return execution parameters.
     Called once at task submission - execution proceeds without further gates.
+    task: optional task description to detect scraping intent and CF routing hints.
     """
     try:
         domain = urlparse(url).netloc.lstrip("www.")
@@ -56,12 +64,26 @@ def classify(url: str, needs_extensions: bool = False) -> dict:
 
     disruptive = mode == "cdp"
 
+    # Scraping intent + CF detection
+    cf_protected = entry.get("cf_protected", False)
+    task_lower = task.lower()
+    is_scraping = any(kw in task_lower for kw in SCRAPING_KEYWORDS)
+    use_fs = is_scraping and cf_protected
+
     return {
         "domain": domain,
         "risk": risk,
         "mode": mode,
         "disruptive": disruptive,
         "rate_limit": rate_limit,
+        "cf_protected": cf_protected,
+        "is_scraping": is_scraping,
+        "use_flaresolverr": use_fs,
+        "flaresolverr_hint": (
+            f"{domain} is CF-protected and this looks like a scraping task. "
+            f"FlareSolverr at http://187.77.222.191:8191/v1 is safer - "
+            f"docs: ~/ai/infra/paperclip/docs/flaresolverr.md"
+        ) if use_fs else None,
         "warning": (
             f"CDP mode required for {domain}. This connects to your real Chrome "
             f"and will interrupt your current browsing. "

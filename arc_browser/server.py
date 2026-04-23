@@ -84,13 +84,16 @@ async def browser_task(task: str, url: str, session: str = "default") -> str:
     Router picks the right browser mode. Returns result when done.
     For LinkedIn/Twitter/Facebook, returns a warning - use browser_task_confirmed() instead.
     """
-    c = classify(url)
+    c = classify(url, task=task)
     if c["warning"]:
         return f"CONFIRMATION REQUIRED\n{c['warning']}"
     if not _check_rate(c["domain"], c["rate_limit"]):
         return f"Rate limit reached for {c['domain']} ({c['rate_limit']} actions/hr). Try again later."
     try:
-        return await run_task(task, session=session, mode=c["mode"])
+        result = await run_task(task, session=session, mode=c["mode"])
+        if c["flaresolverr_hint"]:
+            return f"ROUTING HINT: {c['flaresolverr_hint']}\n\n{result}"
+        return result
     except Exception as e:
         return f"Task failed: {e}"
 
@@ -182,6 +185,22 @@ async def browser_wait(selector: str, timeout: int = 10000, session: str = "defa
     return f"Element found: {selector}"
 
 
+@mcp.tool()
+async def browser_analyze_site(url: str, session: str = "default") -> str:
+    """
+    Navigate to a URL and analyze page structure: pagination patterns, listing
+    selectors, auth walls, CF protection. Returns JSON with agent_hints array.
+    Call before planning a scraping or automation workflow against an unfamiliar site.
+    """
+    from .site_analyzer import analyze_site
+    c = classify(url)
+    ctx = await get_context(session=session, mode=c["mode"])
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    await navigate_ready(page, url)
+    result = await analyze_site(page)
+    return json.dumps(result, indent=2)
+
+
 # -- Classification + introspection -------------------------------------------
 
 @mcp.tool()
@@ -194,7 +213,10 @@ async def browser_preflight(url: str) -> str:
         f"Mode:       {c['mode']}",
         f"Disruptive: {c['disruptive']}",
         f"Rate limit: {c['rate_limit']} actions/hr",
+        f"CF protected: {c['cf_protected']}",
     ]
+    if c["flaresolverr_hint"]:
+        lines.append(f"FlareSolverr: {c['flaresolverr_hint']}")
     if c["warning"]:
         lines.append(f"Warning:    {c['warning']}")
     return "\n".join(lines)

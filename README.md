@@ -248,6 +248,11 @@ ollama pull qwen2.5:14b
 ### Optional: VPS mode
 Set `VPS_BROWSERLESS_URL` in `.env` to a Browserless instance endpoint for remote execution.
 
+## When NOT to use arc-browser
+
+- **One-shot HTTP scraping against a Cloudflare-protected endpoint**: use FlareSolverr on VPS Alpha (`http://187.77.222.191:8191/v1`). Arc-browser is optimized for interactive sessions; FlareSolverr returns HTML + `cf_clearance` cookies in a single POST so any HTTP client can continue from there. Docs: `~/ai/infra/paperclip/docs/flaresolverr.md`.
+- **Trivial unauthenticated GETs** where `curl` or `requests` works: no reason to spin up Chromium.
+
 ## Project Structure
 
 ```
