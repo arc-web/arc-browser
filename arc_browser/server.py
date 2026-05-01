@@ -324,6 +324,43 @@ async def browser_verify_auth(site_id: str) -> str:
     return json.dumps(result, indent=2)
 
 
+# -- Camofox (stealth Firefox sidecar) ----------------------------------------
+
+@mcp.tool()
+async def browser_camofox_health() -> str:
+    """
+    Probe Camofox sidecar (stealth Firefox at port 9377).
+    Use when Patchright Chromium is detected by Turnstile/Datadome/PerimeterX.
+    Sidecar must be running: `cd ~/ai/tools/browser/camofox-browser && npm start`.
+    """
+    from camofox import health, check_health
+    if not check_health():
+        return json.dumps({"ok": False, "error": "sidecar not reachable at http://127.0.0.1:9377"})
+    return json.dumps(health(), indent=2)
+
+
+@mcp.tool()
+async def browser_camofox_view(url: str, session: str = "default") -> str:
+    """
+    Open URL in Camofox (stealth Firefox), return accessibility snapshot, close tab.
+    Use for sites that detect Patchright Chromium fingerprint.
+    Snapshot is ~90% smaller than HTML and includes element refs (e1, e2) for follow-ups.
+    """
+    from camofox import open_tab, snapshot, close_tab, check_health
+    if not check_health():
+        return json.dumps({
+            "error": "Camofox sidecar not running",
+            "fix": "cd ~/ai/tools/browser/camofox-browser && PORT=9377 node server.js &",
+        })
+    tab_id = open_tab(url, user_id=session, session_key=session)
+    try:
+        await asyncio.sleep(3)
+        snap = snapshot(tab_id, user_id=session, fmt="text")
+        return json.dumps(snap, indent=2)
+    finally:
+        close_tab(tab_id, user_id=session)
+
+
 # -- Skool-specific tools -----------------------------------------------------
 
 SKOOL_SESSION = "skool"
