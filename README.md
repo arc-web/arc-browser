@@ -248,6 +248,23 @@ ollama pull qwen2.5:14b
 ### Optional: VPS mode
 Set `VPS_BROWSERLESS_URL` in `.env` to a Browserless instance endpoint for remote execution.
 
+## Camofox sidecar (stealth Firefox)
+
+For sites that detect Patchright Chromium fingerprint (Cloudflare Turnstile, Datadome, PerimeterX), arc-browser can offload to a [Camofox](https://github.com/jo-inc/camofox-browser) sidecar - a Firefox fork (Camoufox) patched at the C++ level for anti-detection, exposed as a REST API.
+
+**Run sidecar:**
+```bash
+cd ~/ai/tools/browser/camofox-browser
+npm install      # first time only - downloads Camoufox binary
+PORT=9377 node server.js &
+```
+
+**Use via MCP tools:**
+- `browser_camofox_health` - probe sidecar
+- `browser_camofox_view(url, session)` - open in Camofox, return accessibility snapshot, close
+
+Client: `arc_browser/camofox.py`. Endpoint configurable via `CAMOFOX_URL` env var (default `http://127.0.0.1:9377`). Optional bearer auth via `CAMOFOX_ACCESS_KEY`.
+
 ## When NOT to use arc-browser
 
 - **One-shot HTTP scraping against a Cloudflare-protected endpoint**: use FlareSolverr on VPS Alpha (`http://187.77.222.191:8191/v1`). Arc-browser is optimized for interactive sessions; FlareSolverr returns HTML + `cf_clearance` cookies in a single POST so any HTTP client can continue from there. Docs: `~/ai/infra/paperclip/docs/flaresolverr.md`.
