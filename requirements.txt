@@ -4,3 +4,4 @@ browser-use==0.12.6
 mcp==1.26.0
 HumanCursor==1.1.5
 python-dotenv==1.2.1
+requests==2.32.5

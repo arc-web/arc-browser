@@ -3,11 +3,8 @@ Autonomous browser agent using browser-use + local Ollama model.
 Used for multi-step tasks where Claude Code shouldn't micro-manage every click.
 """
 import os
-import sys
 
-sys.path.insert(0, os.path.dirname(__file__))
-
-from config.settings import OLLAMA_MODEL, SESSIONS_DIR, SECOND_MONITOR_X
+from .config.settings import OLLAMA_MODEL, SESSIONS_DIR, SECOND_MONITOR_X
 
 BEHAVIORAL_PREAMBLE = (
     "You are controlling a real browser. After each action, pause naturally "

@@ -14,19 +14,21 @@ import time
 from collections import defaultdict
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(__file__))
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    __package__ = "arc_browser"
 
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 from mcp.server.fastmcp import FastMCP
-from browser import (
+from .browser import (
     get_context, current_page,
     navigate_ready, auto_login, verify_auth, with_retry,
 )
-from router import classify, get_recipe
-from agent import run_task
-from utils.human import human_click, human_type, human_delay
+from .router import classify, get_recipe
+from .agent import run_task
+from .utils.human import human_click, human_type, human_delay
 
 mcp = FastMCP("arc-browser")
 
@@ -333,7 +335,7 @@ async def browser_camofox_health() -> str:
     Use when Patchright Chromium is detected by Turnstile/Datadome/PerimeterX.
     Sidecar must be running: `cd ~/ai/tools/browser/camofox-browser && npm start`.
     """
-    from camofox import health, check_health
+    from .camofox import health, check_health
     if not check_health():
         return json.dumps({"ok": False, "error": "sidecar not reachable at http://127.0.0.1:9377"})
     return json.dumps(health(), indent=2)
@@ -346,7 +348,7 @@ async def browser_camofox_view(url: str, session: str = "default") -> str:
     Use for sites that detect Patchright Chromium fingerprint.
     Snapshot is ~90% smaller than HTML and includes element refs (e1, e2) for follow-ups.
     """
-    from camofox import open_tab, snapshot, close_tab, check_health
+    from .camofox import open_tab, snapshot, close_tab, check_health
     if not check_health():
         return json.dumps({
             "error": "Camofox sidecar not running",

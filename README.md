@@ -233,7 +233,14 @@ python -m patchright install chromium
 cp .env.example .env
 
 # Register as MCP server in Claude Code
-claude mcp add arc-browser "python3 $(pwd)/arc_browser/server.py"
+claude mcp add -s user arc-browser -- /usr/bin/env PYTHONPATH="$(pwd)" OLLAMA_MODEL=qwen2.5:14b python3 -m arc_browser.server
+```
+
+Smoke-test the stdio server before using live browser tools:
+
+```bash
+python3 -c "import arc_browser.server; print('ok')"
+python3 scripts/smoke_mcp.py
 ```
 
 ### Optional: Ollama for autonomous tasks

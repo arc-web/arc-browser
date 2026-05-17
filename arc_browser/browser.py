@@ -9,13 +9,10 @@ import asyncio
 import os
 import signal
 import subprocess
-import sys
-
-sys.path.insert(0, os.path.dirname(__file__))
 
 from patchright.async_api import async_playwright
 from playwright_stealth import stealth_async
-from config.settings import SESSIONS_DIR, EXTENSIONS_DIR, SECOND_MONITOR_X, VPS_BROWSERLESS_URL
+from .config.settings import SESSIONS_DIR, EXTENSIONS_DIR, SECOND_MONITOR_X, VPS_BROWSERLESS_URL
 from .cf_recovery import recover_cf
 
 _sessions: dict = {}
@@ -197,8 +194,8 @@ async def auto_login(site_id: str, session: str = None, force: bool = False) -> 
     Idempotent: returns "already" if the verify_url check passes without
     needing to re-authenticate (unless force=True).
     """
-    from router import get_recipe
-    from utils.credentials import get_credentials
+    from .router import get_recipe
+    from .utils.credentials import get_credentials
 
     recipe = get_recipe(site_id)
     auth = recipe.get("auth") if recipe else None
@@ -271,7 +268,7 @@ async def verify_auth(site_id: str, session: str = None) -> dict:
 
     Returns {"authenticated": bool, "reason": str}.
     """
-    from router import get_recipe
+    from .router import get_recipe
 
     recipe = get_recipe(site_id)
     auth = recipe.get("auth") if recipe else None
