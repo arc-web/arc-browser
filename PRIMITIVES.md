@@ -6,6 +6,24 @@ with a predictable surface area.
 
 ## The contract
 
+### `inspect_existing_state(site_id, scope) -> {"resources", "checked", "recommendation"}`
+Inspect existing resources before creating anything. Browser agents must use
+the provider UI or API to list current accounts, organizations, projects,
+clients, tokens, sessions, and other relevant resource containers first.
+
+The response must include:
+
+- exact resources found by name, ID, organization, URL, local state path, and
+  status
+- exact surfaces checked when no matching resource is found
+- a recommendation to reuse, create, pause, or escalate, with consequence and
+  tradeoff
+- the human approval point for irreversible or sensitive changes
+
+Creation tools must not silently create long-lived external resources. This is
+especially important for Google Cloud projects, OAuth consent screens, OAuth
+clients, API enablement, billing changes, and any client secret download.
+
 ### `navigate_ready(page, url, wait_for_selector=None, wait_until="load", post_nav_ms=1000)`
 Navigate and wait until the page is usable. `networkidle` never resolves on SPAs
 that hold open websockets (Skool, LinkedIn). Default to `load`, optionally wait
@@ -57,6 +75,7 @@ Every browser automation tool (arc-browser, skool-manager's browser layer,
 future gmail-manager, etc.) should expose equivalents of:
 
 - `*_navigate(url, wait_for_selector?)` - SPA-safe nav
+- `*_inspect_existing_state(scope)` - report what exists before creation
 - `*_auto_login(site_id)` - unattended auth
 - `*_verify_auth(site_id)` - pre-flight check
 - `*_introspect(url)` - what does this tool know about the site?

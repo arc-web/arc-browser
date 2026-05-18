@@ -37,6 +37,9 @@ async def main() -> int:
             print(f"tools={len(tool_names)}")
             print("has_browser_preflight=" + str("browser_preflight" in tool_names))
             print("has_browser_camofox_health=" + str("browser_camofox_health" in tool_names))
+            print("has_browser_google_cloud_prepare_oauth=" + str("browser_google_cloud_prepare_oauth" in tool_names))
+            print("has_browser_google_cloud_status=" + str("browser_google_cloud_status" in tool_names))
+            print("has_browser_google_cloud_resume=" + str("browser_google_cloud_resume" in tool_names))
 
             preflight = await session.call_tool(
                 "browser_preflight",

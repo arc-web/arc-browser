@@ -29,6 +29,12 @@ from .browser import (
 from .router import classify, get_recipe
 from .agent import run_task
 from .utils.human import human_click, human_type, human_delay
+from .google_cloud import (
+    build_prepare_packet,
+    classify_blocker as classify_google_cloud_blocker,
+    read_state as read_google_cloud_state,
+    save_state as save_google_cloud_state,
+)
 
 mcp = FastMCP("arc-browser")
 
@@ -361,6 +367,101 @@ async def browser_camofox_view(url: str, session: str = "default") -> str:
         return json.dumps(snap, indent=2)
     finally:
         close_tab(tab_id, user_id=session)
+
+
+# -- Google Cloud OAuth setup recipes ----------------------------------------
+
+@mcp.tool()
+async def browser_google_cloud_prepare_oauth(
+    account: str,
+    services: str,
+    project_policy: str = "prompt",
+    project_id: str = "",
+    session: str = "default",
+) -> str:
+    """
+    Prepare Google Cloud Console for OAuth setup.
+
+    Uses stable Google Cloud URLs first and returns a handoff packet when login,
+    CAPTCHA, billing, terms, consent, or final client-secret download requires a
+    human decision.
+    """
+    if project_policy not in ("prompt", "existing"):
+        return json.dumps({
+            "status": "failed",
+            "reason": "invalid_project_policy",
+            "valid_project_policy": ["prompt", "existing"],
+        }, indent=2)
+
+    packet = build_prepare_packet(account, services, project_policy, project_id, session)
+    try:
+        ctx = await get_context(session=session, mode="headed")
+        page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+        await navigate_ready(page, packet["start_url"], post_nav_ms=1500)
+        try:
+            text = await page.locator("body").inner_text(timeout=3000)
+        except Exception:
+            text = await page.evaluate("document.body ? document.body.innerText : document.title")
+        text = text[:6000] if text else ""
+        blocker = classify_google_cloud_blocker(page.url, text)
+        packet.update({
+            "status": "handoff_required" if blocker else "ready",
+            "handoff_reason": blocker,
+            "current_url": page.url,
+            "diagnostics": {
+                "snapshot_excerpt": text[:2000],
+            },
+            "next_action": (
+                "Resolve the handoff reason in the visible browser, then call browser_google_cloud_resume."
+                if blocker else
+                "Use the stable_urls and selectors to enable APIs, configure consent, and create a Desktop OAuth client."
+            ),
+            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        })
+    except Exception as exc:
+        packet.update({
+            "status": "failed",
+            "handoff_reason": "browser_error",
+            "error": str(exc),
+            "next_action": "Inspect the visible browser session or call browser_google_cloud_status for the saved packet.",
+            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        })
+
+    state_file = save_google_cloud_state(session, packet)
+    packet["state_file"] = str(state_file)
+    return json.dumps(packet, indent=2)
+
+
+@mcp.tool()
+async def browser_google_cloud_status(session: str) -> str:
+    """Return the saved Google Cloud OAuth setup packet for a browser session."""
+    state = read_google_cloud_state(session)
+    if not state:
+        return json.dumps({
+            "status": "not_found",
+            "session": session,
+            "next_action": "Call browser_google_cloud_prepare_oauth first.",
+        }, indent=2)
+    return json.dumps(state, indent=2)
+
+
+@mcp.tool()
+async def browser_google_cloud_resume(session: str) -> str:
+    """Resume Google Cloud OAuth setup from the saved session packet."""
+    state = read_google_cloud_state(session)
+    if not state:
+        return json.dumps({
+            "status": "not_found",
+            "session": session,
+            "next_action": "Call browser_google_cloud_prepare_oauth first.",
+        }, indent=2)
+    return await browser_google_cloud_prepare_oauth(
+        account=state.get("account", ""),
+        services=",".join(state.get("services", [])),
+        project_policy=state.get("project_policy", "prompt"),
+        project_id=state.get("project_id", ""),
+        session=session,
+    )
 
 
 # -- Skool-specific tools -----------------------------------------------------

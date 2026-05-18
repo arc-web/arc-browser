@@ -194,10 +194,50 @@ with occasional longer pauses, matching real human timing patterns.
 | `browser_screenshot` | Yes | Capture page as base64 PNG |
 | `browser_snapshot` | Yes | Accessibility tree (structured, low-token) |
 | `browser_preflight` | No | Preview mode/risk/rate for a URL |
+| `browser_google_cloud_prepare_oauth` | Yes | Prepare Google Cloud OAuth setup and return handoff packets |
+| `browser_google_cloud_status` | Yes | Read saved Google Cloud OAuth setup state |
+| `browser_google_cloud_resume` | Yes | Resume saved Google Cloud OAuth setup state |
 | `browser_skool_setup` | - | One-time Skool login (manual CAPTCHA) |
 | `browser_skool_setup_done` | - | Save Skool session after login |
 
 Every session-aware tool accepts `session: str = "default"`.
+
+## Google Cloud OAuth Operating Rule
+
+Before creating any Google Cloud project, OAuth consent screen, OAuth client,
+API enablement, browser profile, or token artifact, agents must inspect what
+already exists and communicate it first.
+
+Required sequence:
+
+1. Check the active account, organization selector, project selector, visible
+   project list, existing OAuth clients, consent screen status, and saved
+   session state.
+2. Report exact findings by name, ID, organization, URL, local state path, and
+   current status. If nothing exists, say which surface was checked.
+3. Recommend reuse or creation with the reason, consequence, and tradeoff.
+4. Stop for human confirmation before any action that creates a long-lived
+   external resource, changes billing or organization scope, accepts terms,
+   grants broad consent, or exposes/downloads client secret JSON.
+5. After approval, proceed through the smallest scoped action and record the
+   resulting state in the calling workflow.
+
+For Google Cloud OAuth setup, prefer reusing an existing Locafy-owned project
+when one is visible and suitable. Create a new project only after checking the
+`locafy.com` organization and `No organization` selector views and explaining
+why reuse is not appropriate.
+
+If an MCP client exits and closes the browser while a human is completing login
+or project selection, keep the session alive with:
+
+```bash
+python3 scripts/google_cloud_keepalive.py \
+  --session google-cloud-<account-slug> \
+  --duration 1800
+```
+
+When running keepalive as a background macOS job, report the job label, PID,
+stdout log path, stderr log path, and the exact stop command.
 
 ## Use Cases
 
