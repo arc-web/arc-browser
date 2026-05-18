@@ -45,6 +45,36 @@
     },
     "notes": "SPA - always use navigate_ready with post-nav settle. Login form selectors work for both email and username login flows."
   },
+  "app.gohighlevel.com": {
+    "risk": "low",
+    "mode": "headed",
+    "actions_per_hour": 120,
+    "waits": { "default": "load", "post_nav_ms": 2500 },
+    "auth": {
+      "flow": "google_sso",
+      "login_url": "https://app.gohighlevel.com/",
+      "credential_item": "Google - digital.access.partners@gmail.com",
+      "google_button_selectors": [
+        "button:has-text('Continue with Google')",
+        "div[role='button']:has-text('Sign in with Google')",
+        "[data-provider='google']",
+        "iframe[src*='accounts.google.com']"
+      ],
+      "verify_url": "https://app.gohighlevel.com/agency_dashboard?tab=summary",
+      "verify_not_contains": "/sign-in",
+      "two_fa": {
+        "detect_selectors": ["input[autocomplete='one-time-code']", "input[name='Passcode']", "div:has-text('2-Step Verification')"],
+        "handoff_channel": "agentic-browser"
+      },
+      "captcha": {
+        "detect_selectors": ["iframe[title*='reCAPTCHA']", "iframe[src*='recaptcha']", "div.g-recaptcha"],
+        "handoff_channel": "agentic-browser"
+      }
+    },
+    "click_speed": { "min_ms": 200, "max_ms": 600 },
+    "auth_click_speed": { "min_ms": 1500, "max_ms": 3000 },
+    "notes": "GHL SPA with iframe-nested settings. Agency vs sub-account view switch via top-left dropdown. PIT settings at Agency Settings > Private Integrations. Sub-account context affects Settings menu - switch to Agency view before PIT create."
+  },
   "github.com": {
     "risk": "low",
     "mode": "headless",

@@ -25,7 +25,9 @@ from mcp.server.fastmcp import FastMCP
 from .browser import (
     get_context, current_page,
     navigate_ready, auto_login, verify_auth, with_retry,
+    wait_for_hydration, extract_modal_text, tick_all_checkboxes, click_by_text,
 )
+from .utils.prompt import agentic_browser_prompt
 from .router import classify, get_recipe
 from .agent import run_task
 from .utils.human import human_click, human_type, human_delay
@@ -146,10 +148,54 @@ async def browser_navigate(url: str, session: str = "default",
 
 @mcp.tool()
 async def browser_snapshot(session: str = "default") -> str:
-    """Return the accessibility tree of the current page (structured, low token cost)."""
+    """Return a structured snapshot of the current page.
+
+    Patchright dropped the `page.accessibility` namespace. This implementation
+    walks the live DOM in-page and emits a compact a11y-style tree with role,
+    name, level, and short text snippets - sufficient for LLM-driven planning
+    at a fraction of full HTML tokens.
+    """
     page = current_page(session)
-    snap = await page.accessibility.snapshot()
-    return str(snap)
+    js = """
+(() => {
+  const ROLE_MAP = {
+    A:'link', BUTTON:'button', INPUT:'textbox', TEXTAREA:'textbox',
+    SELECT:'combobox', NAV:'navigation', MAIN:'main', HEADER:'banner',
+    FOOTER:'contentinfo', ASIDE:'complementary', FORM:'form', LABEL:'label',
+    UL:'list', OL:'list', LI:'listitem', H1:'heading', H2:'heading',
+    H3:'heading', H4:'heading', H5:'heading', H6:'heading',
+    IMG:'img', SECTION:'region', ARTICLE:'article', TABLE:'table',
+    TR:'row', TD:'cell', TH:'columnheader', DIALOG:'dialog',
+  };
+  function nameOf(el){
+    return (el.getAttribute('aria-label') || el.getAttribute('alt') ||
+            el.getAttribute('title') || el.getAttribute('placeholder') ||
+            (el.tagName==='INPUT' ? (el.value||el.type||'') : '') ||
+            (el.innerText||'').trim().split('\\n')[0].slice(0,120) || '');
+  }
+  function walk(el, depth){
+    if (!el || depth>10) return null;
+    if (el.nodeType !== 1) return null;
+    if (el.offsetParent===null && el.tagName!=='BODY' && el.tagName!=='DIALOG') return null;
+    const role = el.getAttribute('role') || ROLE_MAP[el.tagName];
+    const name = nameOf(el);
+    const node = (role || name) ? {role: role||'generic', name: name.slice(0,140), tag: el.tagName.toLowerCase()} : null;
+    const children = [];
+    for (const c of el.children){
+      const sub = walk(c, depth+1);
+      if (sub) children.push(sub);
+    }
+    if (node){ if (children.length) node.children = children; return node; }
+    if (children.length===1) return children[0];
+    if (children.length>1) return {role:'generic', children};
+    return null;
+  }
+  const tree = walk(document.body, 0) || {role:'generic'};
+  return JSON.stringify({url: location.href, title: document.title, tree}, null, 2);
+})()
+"""
+    result = await page.evaluate(js)
+    return result
 
 
 @mcp.tool()
@@ -528,6 +574,204 @@ async def skool_onboard(slug: str, client_id: str = None) -> str:
         return f"onboard failed: {stderr.decode()}"
     return stdout.decode()
 
+
+# ---------------------------------------------------------------------------
+# GHL (GoHighLevel) dedicated tool surface
+# ---------------------------------------------------------------------------
+
+GHL_SESSION = "ghl"
+GHL_DOMAIN = "app.gohighlevel.com"
+
+
+@mcp.tool()
+async def ghl_auth_refresh(force: bool = False) -> str:
+    """Ensure a valid GoHighLevel session exists.
+
+    Uses the google_sso flow in site_registry. Pauses for 2FA via
+    #agentic-browser if Google challenges. Idempotent.
+    Returns JSON: {status, reason}.
+    """
+    result = await auto_login(GHL_DOMAIN, session=GHL_SESSION, force=force)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def ghl_verify_session() -> str:
+    """Check whether the GHL session is authenticated without re-logging in.
+    Returns JSON: {authenticated, reason}.
+    """
+    result = await verify_auth(GHL_DOMAIN, session=GHL_SESSION)
+    return json.dumps(result, indent=2)
+
+
+@mcp.tool()
+async def ghl_switch_view(view: str = "agency") -> str:
+    """Switch GHL UI between 'agency' and 'subaccount' context.
+
+    Args:
+      view: 'agency' or 'subaccount' (with location_id) - currently only 'agency' supported.
+    Returns JSON: {ok, url}.
+    """
+    ctx = await get_context(session=GHL_SESSION, mode="headed")
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    if view == "agency":
+        await page.goto("https://app.gohighlevel.com/agency_dashboard?tab=summary",
+                        wait_until="load", timeout=30000)
+        await wait_for_hydration(page, max_ms=8000)
+    else:
+        return json.dumps({"ok": False, "reason": "use ghl_switch_subaccount(location_id) for sub-account view"})
+    return json.dumps({"ok": True, "url": page.url})
+
+
+@mcp.tool()
+async def ghl_switch_subaccount(location_id: str) -> str:
+    """Switch GHL UI into a specific sub-account by location_id.
+
+    Returns JSON: {ok, url}.
+    """
+    ctx = await get_context(session=GHL_SESSION, mode="headed")
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    await page.goto(f"https://app.gohighlevel.com/v2/location/{location_id}/",
+                    wait_until="load", timeout=30000)
+    await wait_for_hydration(page, max_ms=10000)
+    return json.dumps({"ok": location_id in page.url, "url": page.url})
+
+
+@mcp.tool()
+async def ghl_create_pit(level: str = "agency", name: str = "stackpack-full",
+                          scopes: str = "all") -> str:
+    """Create a Private Integration Token in GoHighLevel.
+
+    Args:
+      level: 'agency' or 'subaccount' (run ghl_switch_subaccount first for subaccount)
+      name: integration name
+      scopes: 'all' (tick everything) or comma-separated list
+
+    Drives the 5-step UI flow:
+      Settings -> Private Integrations -> Create New -> tick scopes -> Submit
+      -> scrape token from display modal before close.
+
+    Returns JSON: {ok, pit, scopes_ticked, name, level, error?}.
+    """
+    ctx = await get_context(session=GHL_SESSION, mode="headed")
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+
+    # Navigate to private integrations
+    settings_url = "https://app.gohighlevel.com/v2/settings/private-integrations"
+    try:
+        await page.goto(settings_url, wait_until="load", timeout=30000)
+        await wait_for_hydration(page, max_ms=10000)
+    except Exception as e:
+        return json.dumps({"ok": False, "error": f"nav failed: {e}"})
+
+    # Click "Create New Integration" - try several common labels
+    for label in ("Create New Integration", "Create Integration", "Add Integration", "+ Add"):
+        if await click_by_text(page, label, role="button", timeout=2500):
+            break
+    else:
+        # Fallback: agentic prompt
+        rep = agentic_browser_prompt(
+            message=f"ghl_create_pit could not find the 'Create New Integration' button on {settings_url}. Click it manually then reply 'done'.",
+            session=GHL_SESSION, timeout=600,
+        )
+        if rep["status"] == "timeout":
+            return json.dumps({"ok": False, "error": "create-button not found, no human reply"})
+
+    await asyncio.sleep(2)
+
+    # Fill name
+    try:
+        name_input = await page.query_selector("input[name='name'], input[placeholder*='Name'], input[placeholder*='name']")
+        if name_input:
+            await name_input.fill(name)
+            await asyncio.sleep(0.5)
+    except Exception:
+        pass
+
+    # Tick scopes
+    ticked = 0
+    if scopes == "all":
+        # Find scope picker container - try common patterns
+        for container_sel in (
+            "[class*='scopes']", "[class*='Scopes']",
+            "[data-testid*='scope']", "form", "[role='dialog']"
+        ):
+            ticked = await tick_all_checkboxes(page, container_sel, delay_range=(0.04, 0.12))
+            if ticked > 5:
+                break
+    else:
+        scope_list = [s.strip() for s in scopes.split(",")]
+        for s in scope_list:
+            cb = await page.query_selector(f"input[type='checkbox'][value='{s}']")
+            if cb:
+                checked = await cb.is_checked()
+                if not checked:
+                    await cb.click()
+                    ticked += 1
+                    await asyncio.sleep(0.1)
+
+    await asyncio.sleep(1)
+
+    # Submit
+    submitted = False
+    for label in ("Create Integration", "Create", "Submit", "Save"):
+        if await click_by_text(page, label, role="button", timeout=2500):
+            submitted = True
+            break
+    if not submitted:
+        return json.dumps({"ok": False, "error": "submit button not found", "scopes_ticked": ticked})
+
+    # Scrape token from modal - wait up to 8s
+    for _ in range(16):
+        await asyncio.sleep(0.5)
+        modal_text = await extract_modal_text(page)
+        if modal_text:
+            import re
+            m = re.search(r"pit-[0-9a-f-]{32,}", modal_text)
+            if m:
+                return json.dumps({
+                    "ok": True, "pit": m.group(0),
+                    "scopes_ticked": ticked, "name": name, "level": level,
+                }, indent=2)
+
+    return json.dumps({"ok": False, "error": "token modal not detected", "scopes_ticked": ticked}, indent=2)
+
+
+@mcp.tool()
+async def ghl_list_pits(level: str = "agency") -> str:
+    """List existing Private Integration Tokens visible in current view.
+
+    Reads names + created dates from the Private Integrations settings page.
+    Returns JSON array.
+    """
+    ctx = await get_context(session=GHL_SESSION, mode="headed")
+    page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+    settings_url = "https://app.gohighlevel.com/v2/settings/private-integrations"
+    await page.goto(settings_url, wait_until="load", timeout=30000)
+    await wait_for_hydration(page, max_ms=8000)
+    rows = await page.evaluate("""
+() => {
+  const out=[];
+  document.querySelectorAll('tr, [role=row], [class*=integration-row]').forEach(r => {
+    const t=(r.innerText||'').trim();
+    if (t && t.length>3) out.push(t.slice(0,200));
+  });
+  return out;
+}
+""")
+    return json.dumps({"level": level, "rows": rows or []}, indent=2)
+
+
+@mcp.tool()
+async def agentic_browser_send_prompt(message: str, session: str = "default",
+                                       timeout: int = 600) -> str:
+    """Post a message to #agentic-browser and wait for human reply.
+
+    Used for 2FA pauses, captcha handoffs, manual-fallback offers.
+    Returns JSON: {status, reply, elapsed_s}.
+    """
+    result = agentic_browser_prompt(message=message, session=session, timeout=timeout)
+    return json.dumps(result, indent=2)
 
 if __name__ == "__main__":
     mcp.run()
